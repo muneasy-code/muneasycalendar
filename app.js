@@ -28,6 +28,12 @@ const sourceGrid = document.querySelector("#sourceGrid");
 const eventList = document.querySelector("#eventList");
 const eventCount = document.querySelector("#eventCount");
 const birthdayList = document.querySelector("#birthdayList");
+const createCalendarBtn = document.querySelector("#createCalendarBtn");
+const calendarResult = document.querySelector("#calendarResult");
+const feedUrlInput = document.querySelector("#feedUrl");
+const copyFeedBtn = document.querySelector("#copyFeedBtn");
+const openFeedBtn = document.querySelector("#openFeedBtn");
+const subscribeFeedBtn = document.querySelector("#subscribeFeedBtn");
 
 function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -184,16 +190,88 @@ function buildICS(){
   ].join("\r\n");
 }
 
-document.querySelector("#downloadBtn").addEventListener("click",()=>{
-  const events = selectedEvents();
-  if(!events.length){ alert("Wähle zuerst mindestens einen Kalender oder Geburtstag aus."); return; }
-  const blob = new Blob([buildICS()],{type:"text/calendar;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href=url; a.download="muneasy-kalender.ics";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+async function createPersonalCalendar() {
+  if (!state.selected.length && !state.birthdays.length) {
+    alert("Wähle mindestens einen Kalender aus oder füge einen Geburtstag hinzu.");
+    return;
+  }
+
+  const originalText = createCalendarBtn.textContent;
+  createCalendarBtn.disabled = true;
+  createCalendarBtn.textContent = "Kalender wird erstellt …";
+
+  try {
+    const response = await fetch("/.netlify/functions/create-calendar", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: document.querySelector("#calendarName").value.trim() || "muneasy calendar",
+        sources: state.selected,
+        birthdays: state.birthdays.map(b => ({
+          name: b.name,
+          date: b.date
+        }))
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success || !result.calendar?.feed_url) {
+      throw new Error(
+        result.error ||
+        result.details ||
+        "Kalender konnte nicht erstellt werden."
+      );
+    }
+
+    const feedUrl = result.calendar.feed_url;
+    const webcalUrl = feedUrl.replace(/^https?:\/\//, "webcal://");
+
+    feedUrlInput.value = feedUrl;
+    openFeedBtn.href = feedUrl;
+    subscribeFeedBtn.href = webcalUrl;
+
+    calendarResult.hidden = false;
+    calendarResult.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    localStorage.setItem("muneasy-last-feed-url", feedUrl);
+  } catch (error) {
+    console.error(error);
+    alert(
+      "Der persönliche Kalender konnte noch nicht erstellt werden.\n\n" +
+      (error?.message || "Unbekannter Fehler")
+    );
+  } finally {
+    createCalendarBtn.disabled = false;
+    createCalendarBtn.textContent = originalText;
+  }
+}
+
+createCalendarBtn.addEventListener("click", createPersonalCalendar);
+
+copyFeedBtn.addEventListener("click", async () => {
+  const value = feedUrlInput.value;
+  if (!value) return;
+
+  try {
+    await navigator.clipboard.writeText(value);
+    const oldText = copyFeedBtn.textContent;
+    copyFeedBtn.textContent = "Kopiert ✓";
+    setTimeout(() => {
+      copyFeedBtn.textContent = oldText;
+    }, 1600);
+  } catch {
+    feedUrlInput.select();
+    document.execCommand("copy");
+  }
 });
+
 async function loadDatabase() {
   const { data: sources, error: sourcesError } = await db
     .from("sources")

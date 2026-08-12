@@ -11,7 +11,7 @@
   <main class="shell">
     <header class="hero">
       <div class="brand">
-        <img class="brand-logo" src="assets/muneasy-logo.png" alt="muneasy Logo">
+        <div class="mark">m</div>
         <div>
           <div class="eyebrow">muneasy</div>
           <h1>Dein Kalender.<br><span>Nur mit dem, was zählt.</span></h1>
@@ -60,17 +60,42 @@
     </section>
 
     <section class="action-card">
-      <div>
+      <div class="action-copy">
         <div class="eyebrow">Fertig?</div>
-        <h2>Kalender erstellen</h2>
-        <p>Die Datei lässt sich in Google Kalender, Samsung Kalender, Apple Kalender, Outlook & Co. importieren.</p>
+        <h2>Deinen Kalender erstellen</h2>
+        <p>Einmal erstellen, anschließend als persönlichen Kalender abonnieren. Änderungen an Spielterminen landen automatisch im Feed.</p>
+
+        <label class="calendar-name-field">
+          <span>Kalendername <small>optional</small></span>
+          <input id="calendarName" type="text" placeholder="z. B. Papas Kalender" autocomplete="off">
+        </label>
       </div>
-      <button id="downloadBtn" class="primary">Kalenderdatei herunterladen ↓</button>
+
+      <button id="createCalendarBtn" class="primary">Meinen Kalender erstellen →</button>
+    </section>
+
+    <section id="calendarResult" class="calendar-result" hidden>
+      <div class="result-icon">✓</div>
+      <div class="result-copy">
+        <div class="eyebrow">Bereit</div>
+        <h2>Dein persönlicher Kalender ist erstellt.</h2>
+        <p>Abonniere diesen Link einmal in deiner Kalender-App. Danach können aktualisierte Termine automatisch übernommen werden.</p>
+
+        <div class="feed-box">
+          <input id="feedUrl" type="text" readonly>
+          <button id="copyFeedBtn" class="secondary" type="button">Link kopieren</button>
+        </div>
+
+        <div class="result-actions">
+          <a id="openFeedBtn" class="secondary link-button" href="#" target="_blank" rel="noopener">Kalender öffnen</a>
+          <a id="subscribeFeedBtn" class="primary link-button" href="#">Kalender abonnieren</a>
+        </div>
+      </div>
     </section>
 
     <footer>
       <strong>muneasy calendar · V1.0</strong>
-      <span>Sporttermine: Datenstand 09.08.2026 · V1 enthält erste verifizierte Termine.</span>
+      <span>Automatische Sport-, Ferien- und Feiertagsdaten · persönlicher Kalenderfeed</span>
     </footer>
   </main>
   

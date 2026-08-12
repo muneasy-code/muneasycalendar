@@ -23,12 +23,11 @@ button{cursor:pointer}
 .shell{width:min(980px,calc(100% - 28px));margin:0 auto;padding:46px 0 70px}
 .hero{padding:12px 4px 34px}
 .brand{display:flex;gap:17px;align-items:flex-start}
-.brand-logo{
-  width:54px;
-  height:54px;
-  object-fit:contain;
-  flex:0 0 auto;
-  filter:drop-shadow(0 8px 18px rgba(208,120,255,.16));
+.mark{
+  width:52px;height:52px;border-radius:18px;
+  display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#171219;font-weight:900;font-size:30px;transform:rotate(-4deg)
 }
 .eyebrow{text-transform:uppercase;letter-spacing:.16em;font-size:12px;font-weight:800;color:var(--muted)}
 h1{font-size:clamp(38px,7vw,72px);line-height:.98;margin:7px 0 14px;letter-spacing:-.045em}
@@ -118,4 +117,51 @@ footer{
   .action-card{align-items:stretch;flex-direction:column}
   .primary{width:100%}
   footer{flex-direction:column}
+}
+
+
+/* Personal calendar feed */
+.action-card{align-items:flex-end}
+.action-copy{flex:1;min-width:0}
+.calendar-name-field{display:block;max-width:420px;margin-top:18px}
+.calendar-name-field span{
+  display:block;margin-bottom:7px;color:var(--muted);
+  font-size:12px;font-weight:750;letter-spacing:.04em
+}
+.calendar-name-field small{font-weight:500;opacity:.65}
+.primary:disabled{opacity:.55;cursor:wait}
+
+.calendar-result{
+  margin-top:16px;padding:24px;
+  border:1px solid rgba(212,169,255,.34);
+  border-radius:var(--radius);
+  background:
+    radial-gradient(circle at 12% 0%,rgba(212,169,255,.14),transparent 34%),
+    rgba(23,22,26,.96);
+  box-shadow:0 18px 50px rgba(0,0,0,.18);
+  display:grid;grid-template-columns:52px 1fr;gap:18px;
+  animation:resultIn .28s ease both
+}
+.calendar-result[hidden]{display:none}
+.result-icon{
+  width:52px;height:52px;display:grid;place-items:center;
+  border-radius:17px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#171219;font-weight:950;font-size:24px
+}
+.result-copy h2{margin-top:4px}
+.result-copy > p{max-width:670px;margin:7px 0 18px;color:var(--muted)}
+.feed-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px}
+.feed-box input{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px}
+.result-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+.link-button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+@keyframes resultIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:680px){
+  .calendar-result{grid-template-columns:1fr}
+  .feed-box{grid-template-columns:1fr}
+  .result-actions{flex-direction:column}
+  .result-actions .link-button{width:100%}
 }
