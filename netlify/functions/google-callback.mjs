@@ -242,9 +242,9 @@ export default async (request) => {
   }
 
   return Response.redirect(
-    `https://muneasycalendar.netlify.app/?google=connected&token=${encodeURIComponent(
+    `https://muneasycalendar.netlify.app/.netlify/functions/sync-google?token=${encodeURIComponent(
       statePayload.token
-    )}`,
+    )}&return=1`,
     302
   );
 };
