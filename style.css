@@ -165,3 +165,25 @@ footer{
   .result-actions{flex-direction:column}
   .result-actions .link-button{width:100%}
 }
+
+
+.subscribe-help{
+  margin-top:14px;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#121115;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+.subscribe-help strong{
+  display:block;
+  color:var(--text);
+  margin-bottom:3px;
+}
+.result-actions button.link-button{
+  border:0;
+  font:inherit;
+  cursor:pointer;
+}

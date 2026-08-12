@@ -222,11 +222,10 @@ async function createPersonalCalendar() {
     }
 
     const feedUrl = result.calendar.feed_url;
-    const webcalUrl = feedUrl.replace(/^https?:\/\//, "webcal://");
 
     feedUrlInput.value = feedUrl;
     openFeedBtn.href = feedUrl;
-    subscribeFeedBtn.href = webcalUrl;
+    subscribeFeedBtn.dataset.feedUrl = feedUrl;
 
     calendarResult.hidden = false;
     calendarResult.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -260,6 +259,28 @@ copyFeedBtn.addEventListener("click", async () => {
   } catch {
     feedUrlInput.select();
     document.execCommand("copy");
+  }
+});
+
+
+subscribeFeedBtn.addEventListener("click", async () => {
+  const value = subscribeFeedBtn.dataset.feedUrl || feedUrlInput.value;
+  if (!value) return;
+
+  try {
+    await navigator.clipboard.writeText(value);
+    const oldText = subscribeFeedBtn.textContent;
+    subscribeFeedBtn.textContent = "Abo-Link kopiert ✓";
+    setTimeout(() => {
+      subscribeFeedBtn.textContent = oldText;
+    }, 1800);
+  } catch {
+    feedUrlInput.select();
+    document.execCommand("copy");
+    subscribeFeedBtn.textContent = "Abo-Link kopiert ✓";
+    setTimeout(() => {
+      subscribeFeedBtn.textContent = "Abo-Link kopieren";
+    }, 1800);
   }
 });
 
