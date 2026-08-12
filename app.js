@@ -204,9 +204,7 @@ async function createPersonalCalendar() {
   try {
     const response = await fetch("/.netlify/functions/create-calendar", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: document.querySelector("#calendarName").value.trim() || "muneasy calendar",
         sources: state.selected,
@@ -220,11 +218,7 @@ async function createPersonalCalendar() {
     const result = await response.json();
 
     if (!response.ok || !result.success || !result.calendar?.feed_url) {
-      throw new Error(
-        result.error ||
-        result.details ||
-        "Kalender konnte nicht erstellt werden."
-      );
+      throw new Error(result.error || result.details || "Kalender konnte nicht erstellt werden.");
     }
 
     const feedUrl = result.calendar.feed_url;
@@ -235,10 +229,7 @@ async function createPersonalCalendar() {
     subscribeFeedBtn.href = webcalUrl;
 
     calendarResult.hidden = false;
-    calendarResult.scrollIntoView({
-      behavior: "smooth",
-      block: "center"
-    });
+    calendarResult.scrollIntoView({ behavior: "smooth", block: "center" });
 
     localStorage.setItem("muneasy-last-feed-url", feedUrl);
   } catch (error) {
