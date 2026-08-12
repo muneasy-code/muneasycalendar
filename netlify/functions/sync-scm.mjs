@@ -1,4 +1,19 @@
 export default async () => {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SECRET_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    return new Response(
+      JSON.stringify({
+        error: "SUPABASE_URL oder SUPABASE_SECRET_KEY fehlt."
+      }),
+      {
+        status: 500,
+        headers: { "content-type": "application/json" }
+      }
+    );
+  }
+
   const url = "https://www.scm-handball.de/match-center/spielplan/";
 
   const response = await fetch(url, {
@@ -22,7 +37,6 @@ export default async () => {
 
   const html = await response.text();
 
-  // HTML in normalen Text umwandeln
   const text = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -52,19 +66,8 @@ export default async () => {
     const date = match[2];
     const time = match[3] || null;
 
-    /*
-      Auf der SCM-Seite steht rund um das Datum ungefähr:
-
-      Wettbewerb
-      Heimteam
-      :
-      Auswärtsteam
-      Datum
-    */
-
     const previous = lines.slice(Math.max(0, i - 12), i);
 
-    // ":" und Bildreste ignorieren
     const clean = previous.filter(
       line =>
         line !== ":" &&
@@ -78,22 +81,26 @@ export default async () => {
     const homeTeam = clean.at(-2);
     const competition = clean.at(-3);
 
-    // Nur Spiele mit SCM
     const isScm =
       /SC Magdeburg/i.test(homeTeam) ||
       /SC Magdeburg/i.test(awayTeam);
 
     if (!isScm) continue;
 
-    // deutsches Datum -> ISO
     const [day, month, year] = date.split(".");
-
     const dateIso = `${year}-${month}-${day}`;
 
     const timeKnown = time && time !== "00:00";
 
     const startsAt = timeKnown
       ? `${dateIso}T${time}:00+02:00`
+      : null;
+
+    const endsAt = timeKnown
+      ? new Date(
+          new Date(`${dateIso}T${time}:00+02:00`).getTime()
+          + 2 * 60 * 60 * 1000
+        ).toISOString()
       : null;
 
     const externalId = [
@@ -112,8 +119,8 @@ export default async () => {
       .replace(/^-|-$/g, "");
 
     games.push({
-      external_id: externalId,
       source_id: "scm",
+      external_id: externalId,
 
       title: `${homeTeam} – ${awayTeam}`,
 
@@ -121,38 +128,82 @@ export default async () => {
       home_team: homeTeam,
       away_team: awayTeam,
 
-      date: dateIso,
-      time: timeKnown ? time : null,
-
       starts_at: startsAt,
+      ends_at: endsAt,
+
+      start_date: !timeKnown ? dateIso : null,
+      end_date: !timeKnown
+        ? new Date(
+            new Date(`${dateIso}T12:00:00`).getTime()
+            + 24 * 60 * 60 * 1000
+          )
+            .toISOString()
+            .slice(0, 10)
+        : null,
+
       all_day: !timeKnown,
 
-      status: timeKnown ? "timed" : "scheduled"
+      status: timeKnown ? "timed" : "scheduled",
+
+      last_synced_at: new Date().toISOString(),
+      source_updated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     });
   }
 
-  // Doppelte Treffer entfernen
   const uniqueGames = [
     ...new Map(
       games.map(game => [game.external_id, game])
     ).values()
   ];
 
-  // Nur aktuelle / zukünftige Saisontermine
   const filteredGames = uniqueGames.filter(
-    game => game.date >= "2026-07-01"
+    game => {
+      const eventDate =
+        game.start_date ||
+        game.starts_at?.slice(0, 10);
+
+      return eventDate >= "2026-07-01";
+    }
   );
 
-  return new Response(
-    JSON.stringify(
-      {
-        success: true,
-        found: filteredGames.length,
-        games: filteredGames
+  const supabaseResponse = await fetch(
+    `${supabaseUrl}/rest/v1/events?on_conflict=source_id,external_id`,
+    {
+      method: "POST",
+      headers: {
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation"
       },
-      null,
-      2
-    ),
+      body: JSON.stringify(filteredGames)
+    }
+  );
+
+  const result = await supabaseResponse.json();
+
+  if (!supabaseResponse.ok) {
+    return new Response(
+      JSON.stringify({
+        error: "Supabase Fehler",
+        details: result
+      }),
+      {
+        status: supabaseResponse.status,
+        headers: { "content-type": "application/json" }
+      }
+    );
+  }
+
+  return new Response(
+    JSON.stringify({
+      success: true,
+      found: filteredGames.length,
+      imported: result.length,
+      message: "SCM-Spielplan erfolgreich synchronisiert.",
+      events: result
+    }, null, 2),
     {
       headers: {
         "content-type": "application/json"
