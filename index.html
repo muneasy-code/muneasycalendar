@@ -62,8 +62,8 @@
     <section class="action-card">
       <div class="action-copy">
         <div class="eyebrow">Fertig?</div>
-        <h2>Deinen Kalender erstellen</h2>
-        <p>Einmal erstellen, anschließend als persönlichen Kalender abonnieren. Änderungen an Spielterminen landen automatisch im Feed.</p>
+        <h2>Deinen Kalender verbinden</h2>
+        <p>Google Kalender verbinden und fertig. Spieltermine, Ferien, Feiertage und Geburtstage werden anschließend automatisch synchronisiert.</p>
 
         <label class="calendar-name-field">
           <span>Kalendername <small>optional</small></span>
@@ -71,36 +71,24 @@
         </label>
       </div>
 
-      <button id="createCalendarBtn" class="primary">Meinen Kalender erstellen →</button>
+      <button id="createCalendarBtn" class="primary google-connect-btn">
+        <span class="google-g">G</span>
+        Mit Google Kalender verbinden
+      </button>
     </section>
 
-    <section id="calendarResult" class="calendar-result" hidden>
+    <section id="googleStatus" class="google-status" hidden>
       <div class="result-icon">✓</div>
-      <div class="result-copy">
-        <div class="eyebrow">Bereit</div>
-        <h2>Dein persönlicher Kalender ist erstellt.</h2>
-        <p>Abonniere diesen Link einmal in deiner Kalender-App. Danach können aktualisierte Termine automatisch übernommen werden.</p>
-
-        <div class="feed-box">
-          <input id="feedUrl" type="text" readonly>
-          <button id="copyFeedBtn" class="secondary" type="button">Link kopieren</button>
-        </div>
-
-        <div class="result-actions">
-          <a id="openFeedBtn" class="secondary link-button" href="#" target="_blank" rel="noopener">Feed öffnen</a>
-          <button id="subscribeFeedBtn" class="primary link-button" type="button">Abo-Link kopieren</button>
-        </div>
-
-        <div class="subscribe-help">
-          <strong>So abonnierst du ihn:</strong>
-          <span>Abo-Link kopieren und in deiner Kalender-App als Kalender „per URL“ bzw. „aus URL“ hinzufügen. Danach bleibt der Kalender mit demselben Feed verbunden.</span>
-        </div>
+      <div>
+        <div class="eyebrow">Verbunden</div>
+        <h2>Dein muneasy Kalender ist bereit.</h2>
+        <p id="googleStatusText">Die Termine wurden mit deinem Google Kalender synchronisiert.</p>
       </div>
     </section>
 
     <footer>
       <strong>muneasy calendar · V1.0</strong>
-      <span>Automatische Sport-, Ferien- und Feiertagsdaten · persönlicher Kalenderfeed</span>
+      <span>Automatische Sport-, Ferien- und Feiertagsdaten · Google Kalender Sync</span>
     </footer>
   </main>
   

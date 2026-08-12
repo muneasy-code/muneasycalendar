@@ -29,11 +29,8 @@ const eventList = document.querySelector("#eventList");
 const eventCount = document.querySelector("#eventCount");
 const birthdayList = document.querySelector("#birthdayList");
 const createCalendarBtn = document.querySelector("#createCalendarBtn");
-const calendarResult = document.querySelector("#calendarResult");
-const feedUrlInput = document.querySelector("#feedUrl");
-const copyFeedBtn = document.querySelector("#copyFeedBtn");
-const openFeedBtn = document.querySelector("#openFeedBtn");
-const subscribeFeedBtn = document.querySelector("#subscribeFeedBtn");
+const googleStatus = document.querySelector("#googleStatus");
+const googleStatusText = document.querySelector("#googleStatusText");
 
 function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -197,9 +194,9 @@ async function createPersonalCalendar() {
     return;
   }
 
-  const originalText = createCalendarBtn.textContent;
+  const originalHtml = createCalendarBtn.innerHTML;
   createCalendarBtn.disabled = true;
-  createCalendarBtn.textContent = "Kalender wird erstellt …";
+  createCalendarBtn.innerHTML = "Kalender wird vorbereitet …";
 
   try {
     const response = await fetch("/.netlify/functions/create-calendar", {
@@ -217,72 +214,86 @@ async function createPersonalCalendar() {
 
     const result = await response.json();
 
-    if (!response.ok || !result.success || !result.calendar?.feed_url) {
-      throw new Error(result.error || result.details || "Kalender konnte nicht erstellt werden.");
+    if (!response.ok || !result.success || !result.calendar) {
+      throw new Error(
+        result.error ||
+        result.details ||
+        "Kalender konnte nicht erstellt werden."
+      );
     }
 
-    const feedUrl = result.calendar.feed_url;
+    const token =
+      result.calendar.token ||
+      new URL(result.calendar.feed_url).searchParams.get("token");
 
-    feedUrlInput.value = feedUrl;
-    openFeedBtn.href = feedUrl;
-    subscribeFeedBtn.dataset.feedUrl = feedUrl;
+    if (!token) {
+      throw new Error("Kalender wurde erstellt, aber der Verbindungstoken fehlt.");
+    }
 
-    calendarResult.hidden = false;
-    calendarResult.scrollIntoView({ behavior: "smooth", block: "center" });
+    localStorage.setItem("muneasy-last-calendar-token", token);
 
-    localStorage.setItem("muneasy-last-feed-url", feedUrl);
+    window.location.href =
+      `/.netlify/functions/google-auth?token=${encodeURIComponent(token)}`;
+
   } catch (error) {
     console.error(error);
     alert(
-      "Der persönliche Kalender konnte noch nicht erstellt werden.\n\n" +
+      "Der Kalender konnte noch nicht mit Google verbunden werden.\n\n" +
       (error?.message || "Unbekannter Fehler")
     );
-  } finally {
+
     createCalendarBtn.disabled = false;
-    createCalendarBtn.textContent = originalText;
+    createCalendarBtn.innerHTML = originalHtml;
   }
 }
 
 createCalendarBtn.addEventListener("click", createPersonalCalendar);
 
-copyFeedBtn.addEventListener("click", async () => {
-  const value = feedUrlInput.value;
-  if (!value) return;
+function handleGoogleReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const google = params.get("google");
 
-  try {
-    await navigator.clipboard.writeText(value);
-    const oldText = copyFeedBtn.textContent;
-    copyFeedBtn.textContent = "Kopiert ✓";
+  if (!google) return;
+
+  if (google === "synced" || google === "connected") {
+    googleStatus.hidden = false;
+
+    const inserted = params.get("inserted");
+    const updated = params.get("updated");
+
+    if (google === "synced" && (inserted || updated)) {
+      const parts = [];
+      if (inserted) parts.push(`${inserted} Termine hinzugefügt`);
+      if (updated && updated !== "0") parts.push(`${updated} aktualisiert`);
+
+      googleStatusText.textContent =
+        `${parts.join(" · ")}. Dein Kalender bleibt ab jetzt mit muneasy verbunden.`;
+    }
+
     setTimeout(() => {
-      copyFeedBtn.textContent = oldText;
-    }, 1600);
-  } catch {
-    feedUrlInput.select();
-    document.execCommand("copy");
+      googleStatus.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+    }, 250);
+
+    history.replaceState({}, document.title, window.location.pathname);
   }
-});
 
-
-subscribeFeedBtn.addEventListener("click", async () => {
-  const value = subscribeFeedBtn.dataset.feedUrl || feedUrlInput.value;
-  if (!value) return;
-
-  try {
-    await navigator.clipboard.writeText(value);
-    const oldText = subscribeFeedBtn.textContent;
-    subscribeFeedBtn.textContent = "Abo-Link kopiert ✓";
-    setTimeout(() => {
-      subscribeFeedBtn.textContent = oldText;
-    }, 1800);
-  } catch {
-    feedUrlInput.select();
-    document.execCommand("copy");
-    subscribeFeedBtn.textContent = "Abo-Link kopiert ✓";
-    setTimeout(() => {
-      subscribeFeedBtn.textContent = "Abo-Link kopieren";
-    }, 1800);
+  if (google === "cancelled") {
+    alert("Die Google-Verbindung wurde abgebrochen.");
+    history.replaceState({}, document.title, window.location.pathname);
   }
-});
+
+  if (google === "sync-error") {
+    alert(
+      "Google wurde verbunden, aber beim ersten Termin-Sync ist etwas schiefgelaufen."
+    );
+    history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+handleGoogleReturn();
 
 async function loadDatabase() {
   const { data: sources, error: sourcesError } = await db
