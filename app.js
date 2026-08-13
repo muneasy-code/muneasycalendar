@@ -249,35 +249,69 @@ async function createPersonalCalendar() {
 
 createCalendarBtn.addEventListener("click", createPersonalCalendar);
 
+async function pollGoogleSync(token) {
+  if (!token) return;
+
+  const started = Date.now();
+  const maxWait = 90 * 1000;
+
+  while (Date.now() - started < maxWait) {
+    try {
+      const response = await fetch(
+        `/.netlify/functions/google-sync-status?token=${encodeURIComponent(token)}`,
+        { cache: "no-store" }
+      );
+
+      if (response.ok) {
+        const status = await response.json();
+
+        if (status.google_sync_status === "done") {
+          googleStatusText.textContent =
+            `Fertig ✓ ${status.google_sync_inserted || 0} Termine hinzugefügt` +
+            `${status.google_sync_updated ? ` · ${status.google_sync_updated} aktualisiert` : ""}.`;
+          return;
+        }
+
+        if (status.google_sync_status === "error") {
+          googleStatusText.textContent =
+            "Der Kalender wurde hinzugefügt. Beim ersten Termin-Sync gab es noch ein Problem – die Verbindung selbst steht.";
+          return;
+        }
+      }
+    } catch {}
+
+    await new Promise(resolve => setTimeout(resolve, 2500));
+  }
+
+  googleStatusText.textContent =
+    "Kalender hinzugefügt ✓ Die Termine werden im Hintergrund weiter synchronisiert.";
+}
+
 function handleGoogleReturn() {
   const params = new URLSearchParams(window.location.search);
   const google = params.get("google");
 
   if (!google) return;
 
-  if (google === "synced" || google === "connected") {
+  if (google === "connected" || google === "synced") {
+    const token =
+      params.get("token") ||
+      localStorage.getItem("muneasy-last-calendar-token");
+
     googleStatus.hidden = false;
-
-    const inserted = params.get("inserted");
-    const updated = params.get("updated");
-
-    if (google === "synced" && (inserted || updated)) {
-      const parts = [];
-      if (inserted) parts.push(`${inserted} Termine hinzugefügt`);
-      if (updated && updated !== "0") parts.push(`${updated} aktualisiert`);
-
-      googleStatusText.textContent =
-        `${parts.join(" · ")}. Dein Kalender bleibt ab jetzt mit muneasy verbunden.`;
-    }
+    googleStatusText.textContent =
+      "Kalender hinzugefügt ✓ Deine Termine werden gerade synchronisiert …";
 
     setTimeout(() => {
       googleStatus.scrollIntoView({
         behavior: "smooth",
         block: "center"
       });
-    }, 250);
+    }, 200);
 
     history.replaceState({}, document.title, window.location.pathname);
+
+    pollGoogleSync(token);
   }
 
   if (google === "cancelled") {
@@ -286,9 +320,9 @@ function handleGoogleReturn() {
   }
 
   if (google === "sync-error") {
-    alert(
-      "Google wurde verbunden, aber beim ersten Termin-Sync ist etwas schiefgelaufen."
-    );
+    googleStatus.hidden = false;
+    googleStatusText.textContent =
+      "Der Google-Kalender wurde verbunden. Beim Termin-Sync gab es noch ein Problem.";
     history.replaceState({}, document.title, window.location.pathname);
   }
 }

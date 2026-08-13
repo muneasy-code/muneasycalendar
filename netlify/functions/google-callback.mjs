@@ -241,10 +241,25 @@ export default async (request) => {
     );
   }
 
+  // Sync im Hintergrund starten. Background Functions antworten sofort mit 202,
+  // während die Termine unabhängig vom Browser weiter synchronisiert werden.
+  const siteUrl = process.env.URL || "https://muneasycalendar.netlify.app";
+
+  try {
+    await fetch(
+      `${siteUrl}/.netlify/functions/sync-google-background?token=${encodeURIComponent(
+        statePayload.token
+      )}`
+    );
+  } catch (error) {
+    console.error("Background-Sync konnte nicht gestartet werden:", error);
+  }
+
+  // Sofort zurück zur App – kein Warten auf zig Google-API-Aufrufe.
   return Response.redirect(
-    `https://muneasycalendar.netlify.app/.netlify/functions/sync-google?token=${encodeURIComponent(
+    `${siteUrl}/?google=connected&sync=running&token=${encodeURIComponent(
       statePayload.token
-    )}&return=1`,
+    )}`,
     302
   );
 };
